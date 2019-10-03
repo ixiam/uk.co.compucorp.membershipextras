@@ -305,48 +305,49 @@ function showNextPeriodLineItemRemovalConfirmation(lineItemData) {
     }
 
     CRM.api3('ContributionRecurLineItem', 'create', params)
-    .done(function (lineRemovalRes) {
-      if (lineRemovalRes.is_error) {
-        CRM.alert(ts('Cannot remove the last item in an order!'), null, 'error', {expires: NOTIFICATION_EXPIRE_TIME_IN_MS});
+      .done(function (lineRemovalRes) {
+        if (lineRemovalRes.is_error) {
+          CRM.alert(ts('Cannot remove the last item in an order!'), null, 'error', {expires: NOTIFICATION_EXPIRE_TIME_IN_MS});
 
-        return;
-      }
+          return;
+        }
 
-      if (lineItemData.entity_table === 'civicrm_membership') {
-        CRM.api3('Membership', 'create', {
-          'id': lineItemData.entity_id,
-          'contribution_recur_id': '',
-        }).done(function (membershipUnlinkRes) {
+        if (lineItemData.entity_table === 'civicrm_membership') {
+          CRM.api3('Membership', 'create', {
+            'id': lineItemData.entity_id,
+            'contribution_recur_id': '',
+          }).done(function (membershipUnlinkRes) {
 
-          if (membershipUnlinkRes.is_error) {
-            CRM.alert(ts('Cannot unlink the associated membership'), null, 'alert', {expires: NOTIFICATION_EXPIRE_TIME_IN_MS});
+            if (membershipUnlinkRes.is_error) {
+              CRM.alert(ts('Cannot unlink the associated membership'), null, 'alert', {expires: NOTIFICATION_EXPIRE_TIME_IN_MS});
 
-            return;
-          }
+              return;
+            }
 
+            createActivity('Update Payment Plan Next Period', 'update_payment_plan_next_period', function(res) {
+              CRM.alert(
+                ts(lineItemData.label + ' should no longer be continued in the next period.'),
+                null,
+                'success',
+                {expires: NOTIFICATION_EXPIRE_TIME_IN_MS}
+              );
+              CRM.refreshParent('#periodsContainer');
+  
+              return;
+            });
+          });
+        } else {
+          CRM.refreshParent('#periodsContainer');
           CRM.alert(
             ts(lineItemData.label + ' should no longer be continued in the next period.'),
             null,
             'success',
             {expires: NOTIFICATION_EXPIRE_TIME_IN_MS}
           );
-          createActivity('Update Payment Plan Next Period', 'update_payment_plan_next_period');
-          CRM.refreshParent('#periodsContainer');
 
           return;
-        });
-      } else {
-        CRM.refreshParent('#periodsContainer');
-        CRM.alert(
-          ts(lineItemData.label + ' should no longer be continued in the next period.'),
-          null,
-          'success',
-          {expires: NOTIFICATION_EXPIRE_TIME_IN_MS}
-        );
-
-        return;
-      }
-    });
+        }
+      });
   }).on('crmConfirm:no', function() {
     return;
   });
@@ -378,7 +379,7 @@ function showAddLineItemConfirmation(label, amount, finTypeId) {
   });
 }
 
-function createActivity(subject, typeId) {
+function createActivity(subject, typeId, callback) {
   CRM.api3('Activity', 'create', {
     'source_contact_id': 'user_contact_id',
     'source_record_id': recurringContributionID,
@@ -387,7 +388,10 @@ function createActivity(subject, typeId) {
     'subject': subject,
     'added_by': 'admin',
   }).done(function (res) {
-    console.log(res);
+    if (callback && typeof(callback) === 'function') {
+      callback();
+    }
+
     return;
   });
 }
