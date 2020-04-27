@@ -158,7 +158,7 @@ abstract class CRM_MembershipExtras_Job_OfflineAutoRenewal_PaymentPlan {
    * Loads value for Pending contribution status into a class attribute.
    */
   private function setContributionPendingStatusValue() {
-    $this->contributionPendingStatusValue =  civicrm_api3('OptionValue', 'getvalue', [
+    $this->contributionPendingStatusValue = civicrm_api3('OptionValue', 'getvalue', [
       'return' => 'value',
       'option_group_id' => 'contribution_status',
       'name' => 'Pending',
